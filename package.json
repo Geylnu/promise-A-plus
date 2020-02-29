@@ -1,0 +1,24 @@
+{
+  "name": "promise_a_puls",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha -r ts-node/register **/*.test.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/sinon": "^7.5.2",
+    "@types/sinon-chai": "^3.2.3",
+    "chai": "^4.2.0",
+    "mocha": "^7.1.0",
+    "sinon": "^9.0.0",
+    "sinon-chai": "^3.5.0"
+  },
+  "dependencies": {
+    "@types/chai": "^4.2.9",
+    "@types/mocha": "^7.0.1"
+  }
+}
