@@ -64,7 +64,7 @@ class SelfPromise {
             globalThis.setTimeout(() => {
                 try {
                     if (typeof callback === 'function'){
-                        resolve(callback.call(this, value))
+                        resolve(callback.call(undefined, value))
                     }else{
                         throw new TypeError(' callback\'s type has changed ')
                     }
@@ -73,7 +73,8 @@ class SelfPromise {
                 }
             })
         } else {
-            throw new TypeError('"onfulfilled" or "onrejected" is expected to be a function')
+            const statsCallback =  this.state === SelfPromise.FULFILLED ? resolve : reject
+            statsCallback(this.value)
         }
     }
 
