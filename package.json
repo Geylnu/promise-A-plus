@@ -21,6 +21,7 @@
   "dependencies": {
     "@types/chai": "^4.2.9",
     "@types/mocha": "^7.0.1",
+    "promises-aplus-tests": "^2.1.2",
     "ts-node": "^8.6.2"
   }
 }
