@@ -78,6 +78,18 @@ class SelfPromise {
         }
     }
 
+    public static resolve(value: unknown): SelfPromise{
+        return new SelfPromise((res,rej)=>{
+            res(value)
+        })
+    }
+
+    public static reject(reason: unknown): SelfPromise{
+        return new SelfPromise((res,rej)=>{
+            rej(reason)
+        })
+    }
+
     public then(onfulfilled?: (value: unknown) => unknown, onrejected?: (reason: unknown) => unknown): SelfPromise {
         return new SelfPromise((resolve, reject) => {
             if (this.state === SelfPromise.PENDING) {
