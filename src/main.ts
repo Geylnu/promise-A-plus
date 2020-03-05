@@ -1,8 +1,14 @@
+import { rejected } from '../test/my-adapter';
 interface nextPromiseCallback {
     onfulfilled?: (value: unknown) => unknown,
     onrejected?: (reason: unknown) => unknown,
     resolve: SelfPromise["selfResolve"],
     reject: SelfPromise["selfReject"],
+}
+
+interface thenable {
+    then: Function,
+    [propName: string]: unknown;
 }
 
 class SelfPromise {
@@ -12,9 +18,10 @@ class SelfPromise {
 
     private state: 'pending' | 'fulfilled' | 'rejected' = "pending"
     private value: unknown
+    private ignore: boolean = false
 
     constructor(executor: (resolve: (value?: unknown) => void, reject: (reason?: unknown) => void) => void) {
-        if (typeof executor !== 'function'){
+        if (typeof executor !== 'function') {
             throw new TypeError('executor must to be a function')
         }
         try {
@@ -26,8 +33,60 @@ class SelfPromise {
 
     private callBacks: nextPromiseCallback[] = []
 
+    private isThenable(value: unknown): Function | undefined {
+        try {
+            if ((typeof value === 'object' || typeof value === 'function') && value !== null) {
+                const valueThen = (value as thenable).then
+                if ((typeof valueThen === 'function')) {
+                    return valueThen
+                }
+            }
+        } catch (error) {
+            this.selfReject(error)
+        }
+    }
+
     private selfResolve(value?: unknown): void {
-        this.transition(SelfPromise.FULFILLED, value)
+        const valueThen = this.isThenable(value)
+        if (value === this) {
+            this.selfReject(new TypeError('the value can\'t refer to same object'))
+        } else if (value instanceof SelfPromise) {
+            value.then((value) => {
+                this.selfResolve(value)
+            }, (reason) => {
+                this.selfReject(reason)
+            })
+            // 处理thenable对象
+        } else if (valueThen) {
+            let hasCalled = false
+            try {
+                // new SelfPromise(valueThen.bind(value)).then( (value: unknown) => {
+                //     this.selfResolve(value)
+                // }, (reason: unknown) => {
+                //     this.selfReject(reason)
+                // })
+
+                valueThen.call(value, (value: unknown) => {
+                    if (!hasCalled){
+                        hasCalled = true
+                        this.selfResolve(value)
+                    }
+
+                }, (reason: unknown) => {
+                    if (!hasCalled){
+                        hasCalled = true
+                        this.selfReject(reason)
+                    }
+                })
+            } catch (error) {
+                if (!hasCalled){
+                    hasCalled = true
+                    this.selfReject(error)
+                }
+            }
+        } else {
+            this.transition(SelfPromise.FULFILLED, value)
+        }
     }
 
     private selfReject(reason?: unknown): void {
@@ -63,9 +122,9 @@ class SelfPromise {
         if (typeof callback === 'function') {
             globalThis.setTimeout(() => {
                 try {
-                    if (typeof callback === 'function'){
+                    if (typeof callback === 'function') {
                         resolve(callback.call(undefined, value))
-                    }else{
+                    } else {
                         throw new TypeError(' callback\'s type has changed ')
                     }
                 } catch (error) {
@@ -73,19 +132,19 @@ class SelfPromise {
                 }
             })
         } else {
-            const statsCallback =  this.state === SelfPromise.FULFILLED ? resolve : reject
+            const statsCallback = this.state === SelfPromise.FULFILLED ? resolve : reject
             statsCallback(this.value)
         }
     }
 
-    public static resolve(value: unknown): SelfPromise{
-        return new SelfPromise((res,rej)=>{
+    public static resolve(value: unknown): SelfPromise {
+        return new SelfPromise((res, rej) => {
             res(value)
         })
     }
 
-    public static reject(reason: unknown): SelfPromise{
-        return new SelfPromise((res,rej)=>{
+    public static reject(reason: unknown): SelfPromise {
+        return new SelfPromise((res, rej) => {
             rej(reason)
         })
     }
